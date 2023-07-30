@@ -9,5 +9,5 @@ struct Filesystem {
 	uint32_t OwnerProductID;
 
 	void *Instance;
-	NodeOperations *Operations;
+	FSOperations *Operations;
 };

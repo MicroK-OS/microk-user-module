@@ -17,7 +17,7 @@ VirtualFilesystem::~VirtualFilesystem() {
 	delete BaseNode;
 }
 	
-filesystem_t VirtualFilesystem::RegisterFilesystem(uint32_t vendorID, uint32_t productID, void *instance, NodeOperations *ops) {
+filesystem_t VirtualFilesystem::RegisterFilesystem(uint32_t vendorID, uint32_t productID, void *instance, FSOperations *ops) {
 	/* It's us */
 	Filesystem *fs = new Filesystem;
 
@@ -40,7 +40,7 @@ filesystem_t VirtualFilesystem::RegisterFilesystem(uint32_t vendorID, uint32_t p
 #define IF_IS_OURS( x ) \
 	if (node->FS->OwnerVendorID == 0 && node->FS->OwnerProductID == 0) return x
 
-uintmax_t VirtualFilesystem::DoFilesystemOperation(filesystem_t fs, FileOperationRequest *request) {
+uintmax_t VirtualFilesystem::DoFilesystemOperation(filesystem_t fs, FSOperationRequest *request) {
 	bool found = false;
 	RegisteredFilesystemNode *previous; 
 	RegisteredFilesystemNode *node = FindNode(fs, &previous, &found);
@@ -75,7 +75,7 @@ uintmax_t VirtualFilesystem::DoFilesystemOperation(filesystem_t fs, FileOperatio
 }
 
 void VirtualFilesystem::SetRootFS(filesystem_t fs) {
-	FileOperationRequest request;
+	FSOperationRequest request;
 	request.Request = NODE_GETROOT;
 	VNode *rootNode = DoFilesystemOperation(fs, &request);
 	
@@ -84,7 +84,7 @@ void VirtualFilesystem::SetRootFS(filesystem_t fs) {
 }
 
 VNode *VirtualFilesystem::ProgressPath(VNode *current, const char *nextName) {
-	FileOperationRequest request;
+	FSOperationRequest request;
 
 	request.Request = NODE_GETBYNAME;
 	request.Data.GetByName.Directory = current->Inode;

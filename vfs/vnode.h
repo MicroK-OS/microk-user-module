@@ -10,3 +10,9 @@ struct VNode {
 	property_t Properties;
 	inode_t Directory;
 }__attribute__((packed));
+
+struct DirNode {
+	char Name[MAX_NAME_SIZE] = { 0 };
+
+	property_t Properties;
+}__attribute__((packed));

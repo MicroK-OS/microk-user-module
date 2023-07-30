@@ -124,12 +124,14 @@ VNode *RamFS::CreateNode(const inode_t directory, const char name[MAX_NAME_SIZE]
 	return 0;
 }
 
-VNode *RamFS::DeleteNode(const inode_t inode) {
+uintmax_t RamFS::DeleteNode(const inode_t inode) {
 	if (inode > MaxInodes) return 0;
 
 	InodeTableObject *node = &InodeTable[inode];
 
 	if(node->Available) return 0;
+
+	/* Todo */
 
 	return 0;
 }

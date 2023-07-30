@@ -90,7 +90,7 @@ void VFSInit() {
 	vfs = new VirtualFilesystem();
 	rootRamfs = new RamFS(2048);
 
-	NodeOperations *ramfsOps = new NodeOperations;
+	FSOperations *ramfsOps = new FSOperations;
 	
 	ramfsOps->CreateNode = rootRamfs->CreateNodeWrapper;
 	ramfsOps->DeleteNode = rootRamfs->DeleteNodeWrapper;
@@ -105,7 +105,7 @@ void VFSInit() {
 
 	vfs->SetRootFS(ramfsDesc);
 
-	FileOperationRequest request;
+	FSOperationRequest request;
 	request.Request = NODE_GETROOT;
 	VNode *rootNode = vfs->DoFilesystemOperation(ramfsDesc, &request);
 

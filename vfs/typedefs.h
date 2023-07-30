@@ -3,6 +3,7 @@
 #include <stddef.h>
 
 #define MAX_NAME_SIZE            0x0100
+#define MAX_PATH_SIZE            0x1000
 
 #define NODES_IN_VNODE_TABLE     0x0040
 
@@ -32,4 +33,8 @@
 
 typedef uintmax_t filesystem_t;
 typedef uintmax_t inode_t;
-typedef uint16_t property_t;
+typedef uint32_t property_t;
+typedef uint32_t mode_t;
+typedef intmax_t fd_t;
+typedef intmax_t dir_t;
+typedef intmax_t result_t;

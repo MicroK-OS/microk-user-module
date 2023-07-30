@@ -37,8 +37,8 @@ public:
 		return static_cast<RamFS*>(instance)->CreateNode(directory, name, flags);
 	}
 
-	VNode *DeleteNode(const inode_t inode);
-	static VNode *DeleteNodeWrapper(void *instance, const inode_t inode) {
+	uintmax_t DeleteNode(const inode_t inode);
+	static uintmax_t DeleteNodeWrapper(void *instance, const inode_t inode) {
 		return static_cast<RamFS*>(instance)->DeleteNode(inode);
 	}
 
