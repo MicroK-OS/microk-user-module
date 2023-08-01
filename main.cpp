@@ -24,47 +24,36 @@ extern "C" uint32_t ProductID = 0xDEADBEEF;
 void VFSInit();
 void InitrdInit();
 void FBInit();
+	
+VirtualFilesystem *vfs;
+RamFS *rootRamfs;
+filesystem_t ramfsDesc;
 
-void MessageHandler() {
-	MKMI_Message *msg = ReadIncomingMessage();
-	uint32_t *data = (uint32_t*)GetMessageDataStart(msg);
+int MessageHandler(MKMI_Message *msg, uint64_t *data) {
+	uint32_t *magicNumber = (uint32_t*)data;
+	MKMI_Printf("Magic number: %d\r\n", *magicNumber);
 
-	MKMI_Printf("Message at        0x%x\r\n"
-		    " Sender Vendor ID:  %x\r\n"
-		    " Sender Product ID: %x\r\n"
-		    " Message Size:      %d\r\n"
-		    " Data:              %d\r\n",
-		    msg,
-		    msg->SenderVendorID,
-		    msg->SenderProductID,
-		    msg->MessageSize,
-		    *data);
+	if(*magicNumber == FILE_OPERATION_REQUEST_MAGIC_NUMBER) {
+		void *response;
+		size_t responseSize;
+		vfs->DoFileOperation((FileOperationRequest*)data, &response, &responseSize);
+	
+		rootRamfs->ListDirectory(1);
+//		SendDirectMessage(msg->SenderVendorID, msg->SenderProductID, response, responseSize);
+		return 0;
+	}
 
-	uintptr_t bufAddr = 0xE000000000;
-	size_t bufSize = 4096 * 2;
-	uint32_t bufID = *data;
-
-	Syscall(SYSCALL_MODULE_BUFFER_MAP, bufAddr, bufID, 0, 0, 0, 0);
-	MKMI_Printf("Buffer data: %d\r\n", *(uint32_t*)bufAddr);
-
-	CleanUpIncomingMessage(msg);
-
-	_return(0);
+	return -1;
 }
 
 extern "C" size_t OnInit() {
-	Syscall(SYSCALL_MODULE_MESSAGE_HANDLER, MessageHandler, 0, 0, 0, 0, 0);
+	SetMessageHandlerCallback(MessageHandler);
+	Syscall(SYSCALL_MODULE_MESSAGE_HANDLER, MKMI_MessageHandler, 0, 0, 0, 0, 0);
 
 	VFSInit();
 	InitrdInit();
 	FBInit();	
 
-	uintptr_t bufAddr = 0xF000000000;
-	size_t bufSize = 4096 * 2;
-	uint32_t bufID;
-	Syscall(SYSCALL_MODULE_BUFFER_CREATE, bufSize, 0x02, &bufID, 0, 0, 0);
-	Syscall(SYSCALL_MODULE_BUFFER_MAP, bufAddr, bufID, 0, 0, 0, 0);
-	*(uint32_t*)bufAddr = 69;
 	/* First, initialize VFS data structures */
 	/* Instantiate the rootfs (it will be overlayed soon) */
 	/* Create a ramfs, overlaying it in the rootfs */
@@ -82,10 +71,6 @@ extern "C" size_t OnExit() {
 
 void VFSInit() {
 	Syscall(SYSCALL_MODULE_SECTION_REGISTER, "VFS", VendorID, ProductID, 0, 0 ,0);
-
-	VirtualFilesystem *vfs;
-	RamFS *rootRamfs;
-	filesystem_t ramfsDesc;
 
 	vfs = new VirtualFilesystem();
 	rootRamfs = new RamFS(2048);

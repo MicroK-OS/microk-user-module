@@ -17,6 +17,8 @@ class VirtualFilesystem {
 public:
 	VirtualFilesystem();
 	~VirtualFilesystem();
+	
+	void DoFileOperation(FileOperationRequest *request, void *response, size_t *responseSize);
 
 	filesystem_t RegisterFilesystem(uint32_t vendorID, uint32_t productID, void *instance, FSOperations *ops);
 	uintmax_t DoFilesystemOperation(filesystem_t fs, FSOperationRequest *request);
