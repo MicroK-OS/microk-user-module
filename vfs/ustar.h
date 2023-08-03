@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include "vfs.h"
 
 struct TarHeader {
 	char Filename[100];
@@ -23,3 +24,4 @@ struct TarHeader {
 
 void FindInArchive(uint8_t *archive, const char *name, uint8_t **file, size_t *size);
 void LoadArchive(uint8_t *archive);
+void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directory);

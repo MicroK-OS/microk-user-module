@@ -159,20 +159,44 @@ void InitrdInit() {
 		address += HIGHER_HALF;
 		MKMI_Printf("Loading file initrd.tar from 0x%x with size %dkb.\r\n", address, size / 1024);
 
-		LoadArchive(address);
+		UnpackArchive(vfs, address, "/");
+		rootRamfs->ListDirectory(0);
 
-		uint8_t *file;
-		size_t size;
+		uint8_t *configFile;
+		size_t configFileSize;
 
-		FindInArchive(address, "modules/cafebabe-b830c0de-pci-module.elf", &file, &size);
-		if(file == NULL || size == 0) _exit(69);
+		uint8_t *execFile;
+		size_t execFileSize;
 		
-		Syscall(SYSCALL_PROC_EXEC, file, size, 0, 0, 0, 0);
+		FindInArchive(address, "etc/modules.d/preload.conf", &configFile, &configFileSize);
+		if(configFile == NULL || configFileSize == 0) return;
 
-		FindInArchive(address, "modules/cafebabe-a3c1c0de-acpi-module.elf", &file, &size);
-		if(file == NULL || size == 0) _exit(128);
+		const char *id = Strtok(configFile, "=");
+		if(id == NULL) return;
+		const char *val = Strtok(NULL, "\r\n");
+		if (val == NULL) return;
 
-		Syscall(SYSCALL_PROC_EXEC, file, size, 0, 0, 0, 0);
+		while(true) {
+			if(Strcmp(id, "always") == 0) {
+				char fileName[256] = {0};
+				Strcpy(fileName, "modules/");
+				Strcpy(fileName + 8, val);
+
+				MKMI_Printf("Starting %s\r\n", fileName);
+
+				FindInArchive(address, fileName, &execFile, &execFileSize);
+				if(execFile != NULL && execFileSize != 0) {
+					Syscall(SYSCALL_PROC_EXEC, execFile, execFileSize, 0, 0, 0, 0);
+				}
+			}
+			
+			id = Strtok(NULL, "=");
+			if(id == NULL) break;
+			val = Strtok(NULL, "\r\n");
+			if (val == NULL) break;
+		}
+
+
 	} else {
 		MKMI_Printf("No initrd found");
 	}

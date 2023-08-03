@@ -26,6 +26,7 @@ void VirtualFilesystem::DoFileOperation(FileOperationRequest *request, void *res
 	switch(request->Request) {
 		case FOPS_CREATE: {
 			VNode *baseDir = ResolvePath(request->Data.Create.Path);
+			MKMI_Printf("0x%x\r\n", baseDir);
 		
 			bool found = false;
 			RegisteredFilesystemNode *previous; 
