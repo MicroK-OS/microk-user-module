@@ -102,12 +102,39 @@ void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directo
 		request->Data.Create.Properties = 0;
 		request->Data.Create.Properties |= isDirectory ? NODE_PROPERTY_DIRECTORY : NODE_PROPERTY_FILE;
 
+		Memset(request->Data.Create.Path, 0, MAX_PATH_SIZE);
 		Strcpy(request->Data.Create.Path, path);
+		Memset(request->Data.Create.Name, 0, MAX_PATH_SIZE);
 		Strcpy(request->Data.Create.Name, name);
 
 		void *response;
 		size_t responseSize;
-		vfs->DoFileOperation((FileOperationRequest*)request, &response, &responseSize);
+		vfs->DoFileOperation(request, &response, &responseSize);
+
+		MKMI_Printf("Result: %d\r\n", request->Result);
+	
+		if(!isDirectory) {
+			request->Request = FOPS_OPEN;
+
+			Memset(request->Data.Open.Path, 0, MAX_PATH_SIZE);
+			Strcpy(request->Data.Open.Path, directory);
+			*(char*)&request->Data.Open.Path[baseDirectoryLength-1] = '/';
+			Strcpy(request->Data.Open.Path + baseDirectoryLength, header->Filename);
+
+			request->Data.Open.Capabilities = 0; /* TODO */
+		
+			vfs->DoFileOperation(request, &response, &responseSize);
+
+			MKMI_Printf("Path: %s\r\n", request->Data.Open.Path);
+
+			request->Request = FOPS_CHMOD;
+			vfs->DoFileOperation(request, &response, &responseSize);
+			request->Request = FOPS_WRITE;
+			vfs->DoFileOperation(request, &response, &responseSize);
+			request->Request = FOPS_CLOSE;
+			vfs->DoFileOperation(request, &response, &responseSize);
+
+		}
 
 		ptr += (((fileSize + 511) / 512) + 1) * 512;
 	}

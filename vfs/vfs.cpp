@@ -22,24 +22,22 @@ VirtualFilesystem::~VirtualFilesystem() {
 	if (node->FS->OwnerVendorID == 0 && node->FS->OwnerProductID == 0) return x
 
 void VirtualFilesystem::DoFileOperation(FileOperationRequest *request, void *response, size_t *responseSize) {
-	result_t result;
+	result_t result = 0;
 	switch(request->Request) {
 		case FOPS_CREATE: {
 			VNode *baseDir = ResolvePath(request->Data.Create.Path);
-			MKMI_Printf("0x%x\r\n", baseDir);
 		
 			bool found = false;
 			RegisteredFilesystemNode *previous; 
 			RegisteredFilesystemNode *node = FindNode(baseDir->FSDescriptor, &previous, &found);
 			VNode *createdNode = node->FS->Operations->CreateNode(node->FS->Instance, baseDir->Inode, request->Data.Create.Name, request->Data.Create.Properties);
 
-			if(createdNode == NULL) result = 1;
-			else result = 0;
+			if(createdNode == NULL) result = 0;
+			else result = 1;
 
 			response = (void*)request;
 			*responseSize = sizeof(*request);
 			((FileOperationRequest*)response)->Result = result;
-
 			}
 			break;
 		default:

@@ -38,8 +38,7 @@ int MessageHandler(MKMI_Message *msg, uint64_t *data) {
 		size_t responseSize;
 		vfs->DoFileOperation((FileOperationRequest*)data, &response, &responseSize);
 	
-		rootRamfs->ListDirectory(1);
-//		SendDirectMessage(msg->SenderVendorID, msg->SenderProductID, response, responseSize);
+		SendDirectMessage(msg->SenderVendorID, msg->SenderProductID, response, responseSize);
 		return 0;
 	}
 
@@ -54,18 +53,12 @@ extern "C" size_t OnInit() {
 	InitrdInit();
 	FBInit();	
 
-	/* First, initialize VFS data structures */
-	/* Instantiate the rootfs (it will be overlayed soon) */
-	/* Create a ramfs, overlaying it in the rootfs */
-	/* Extract the initrd in the /init directory in the ramfs */
 	return 0;
 }
 
 extern "C" size_t OnExit() {
-	/* Close and destroy all files */
-	/* Unmount all filesystems and overlays */
-	/* Destroy the rootfs */
-	/* Delete VFS data structures */
+	delete vfs;
+
 	return 0;
 }
 
