@@ -57,10 +57,10 @@ void LoadArchive(uint8_t *archive) {
 void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directory) {
 	unsigned char *ptr = archive;
 
-	FileOperationRequest *request = (FileOperationRequest*)Malloc(sizeof(FileOperationRequest));
-	request->MagicNumber = FILE_OPERATION_REQUEST_MAGIC_NUMBER;
-	void *response;
-	size_t responseSize;
+	uint8_t data[sizeof(FileCreateRequest)] = {0};
+	FileCreateRequest *createRequest = (FileCreateRequest*)&data;
+	createRequest->MagicNumber = FILE_OPERATION_REQUEST_MAGIC_NUMBER;
+	createRequest->Request = FOPS_CREATE;
 
 	while (!Memcmp(ptr + 257, "ustar", 5)) { // Until we have a valid header
 		TarHeader *header = (TarHeader*)ptr;
@@ -98,22 +98,19 @@ void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directo
 		
 		MKMI_Printf("Path: %s  %s\r\n", path, name);
 		
-		request->Request = FOPS_CREATE;
-		request->Data.Create.Properties = 0;
-		request->Data.Create.Properties |= isDirectory ? NODE_PROPERTY_DIRECTORY : NODE_PROPERTY_FILE;
+		createRequest->Properties = 0;
+		createRequest->Properties |= isDirectory ? NODE_PROPERTY_DIRECTORY : NODE_PROPERTY_FILE;
 
-		Memset(request->Data.Create.Path, 0, MAX_PATH_SIZE);
-		Strcpy(request->Data.Create.Path, path);
-		Memset(request->Data.Create.Name, 0, MAX_PATH_SIZE);
-		Strcpy(request->Data.Create.Name, name);
+		Memset(createRequest->Path, 0, MAX_PATH_SIZE);
+		Strcpy(createRequest->Path, path);
+		Memset(createRequest->Name, 0, MAX_PATH_SIZE);
+		Strcpy(createRequest->Name, name);
 
-		void *response;
-		size_t responseSize;
-		vfs->DoFileOperation(request, &response, &responseSize);
+		vfs->DoFileOperation(createRequest);
 
-		MKMI_Printf("Result: %d\r\n", request->Result);
+		MKMI_Printf("Result: %d\r\n", createRequest->Result);
 	
-		if(!isDirectory) {
+		if(!isDirectory) {/*
 			request->Request = FOPS_OPEN;
 
 			Memset(request->Data.Open.Path, 0, MAX_PATH_SIZE);
@@ -121,7 +118,7 @@ void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directo
 			*(char*)&request->Data.Open.Path[baseDirectoryLength-1] = '/';
 			Strcpy(request->Data.Open.Path + baseDirectoryLength, header->Filename);
 
-			request->Data.Open.Capabilities = 0; /* TODO */
+			request->Data.Open.Capabilities = 0;
 		
 			vfs->DoFileOperation(request, &response, &responseSize);
 
@@ -133,11 +130,9 @@ void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directo
 			vfs->DoFileOperation(request, &response, &responseSize);
 			request->Request = FOPS_CLOSE;
 			vfs->DoFileOperation(request, &response, &responseSize);
-
+*/
 		}
 
 		ptr += (((fileSize + 511) / 512) + 1) * 512;
 	}
-
-	Free(request);
 }

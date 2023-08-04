@@ -10,37 +10,52 @@ struct FSOperations {
 	VNode *(*GetByName)(void *instance, const inode_t directory, const char name[MAX_NAME_SIZE]);
 	VNode *(*GetByIndex)(void *instance, const inode_t directory, const size_t index);
 	VNode *(*GetRootNode)(void *instance);
+	
+//	size_t (*WriteNode)(void *instance, const inode_t node, );
+//	size_t (*ReadNode)(void *instance, const inode_t node, );
 };
 
 struct FSOperationRequest {
 	uint32_t MagicNumber;
 	uint16_t Request;
 
-	union {
-		struct {
-			inode_t Directory;
-			char Name[MAX_NAME_SIZE];
-			property_t Flags;
-		} CreateNode;
+	result_t Result : 64;
+}__attribute__((packed));
 
-		struct {
-			inode_t Node;
-		} DeleteNode;
+struct FSCreateNodeRequest : public FSOperationRequest {
+	VNode ResultNode;
 
-		struct {
-			inode_t Node;
-		} GetByNode;
+	inode_t Directory;
+	char Name[MAX_NAME_SIZE];
+	property_t Flags;
+}__attribute__((packed));
 
-		struct {
-			inode_t Directory;
-			char Name[MAX_NAME_SIZE];
-		} GetByName;
+struct FSDeleteNodeRequest : public FSOperationRequest {
+	inode_t Node;
+}__attribute__((packed));
 
-		struct {
-			inode_t Directory;
-			size_t Index;
-		} GetByIndex;
-	} Data;
+struct FSGetByNodeRequest : public FSOperationRequest {
+	VNode ResultNode;
+
+	inode_t Node;
+}__attribute__((packed));
+
+struct FSGetByNameRequest : public FSOperationRequest {
+	VNode ResultNode;
+
+	inode_t Directory;
+	char Name[MAX_NAME_SIZE];
+}__attribute__((packed));
+
+struct FSGetByIndexRequest : public FSOperationRequest {
+	VNode ResultNode;
+
+	inode_t Directory;
+	size_t Index;
+}__attribute__((packed));
+
+struct FSGetRootRequest : public FSOperationRequest {
+	VNode ResultNode;
 }__attribute__((packed));
 
 
@@ -68,74 +83,71 @@ struct FileOperationRequest {
 	uint16_t Request;
 			
 	result_t Result : 64;
+}__attribute__((packed));
 
-	union {
-		struct {
-			const char Path[MAX_PATH_SIZE];
-			const char Name[MAX_NAME_SIZE];
-			property_t Properties;
-		} Create;
+struct FileCreateRequest : public FileOperationRequest {
+	const char Path[MAX_PATH_SIZE];
+	const char Name[MAX_NAME_SIZE];
+	property_t Properties;
+}__attribute__((packed));
 
-		struct {
-			const char Path[MAX_PATH_SIZE];
-		} Delete;
+struct FileDeleteRequest : public FileOperationRequest {
+	const char Path[MAX_PATH_SIZE];
+}__attribute__((packed));
 
-		struct {
-			const char InitialPath[MAX_PATH_SIZE];
-			const char NewPath[MAX_PATH_SIZE];
-		} Rename;
+struct FileRenameRequest : public FileOperationRequest {
+	const char InitialPath[MAX_PATH_SIZE];
+	const char NewPath[MAX_PATH_SIZE];
+}__attribute__((packed));
 
-		struct {
-			const char Path[MAX_PATH_SIZE];
-			property_t Properties;
+struct FileChmodRequest : public FileOperationRequest {
+	const char Path[MAX_PATH_SIZE];
+	property_t Properties;
+}__attribute__((packed));
 
-		} Chmod;
+struct FileOpenRequest : public FileOperationRequest {
+	const char Path[MAX_PATH_SIZE];
+	mode_t Capabilities;
+}__attribute__((packed));
 
-		struct {
-			const char Path[MAX_PATH_SIZE];
-			mode_t Capabilities;
-		} Open;
+struct FileCloseRequest : public FileOperationRequest {
+	fd_t FileHandle;
+	mode_t Capabilities;
+}__attribute__((packed));
 
-		struct {
-			fd_t FileHandle;
-			mode_t Capabilities;
-		} Close;
+struct FileReadRequest : public FileOperationRequest {
+	fd_t FileHandle;
+	size_t Offset;
+	size_t Size;
 
-		struct {
-			fd_t FileHandle;
-			size_t Offset;
-			size_t Count;
+	/* The buffer extends for an amount defined by Size */
+	uint8_t Buffer;
+}__attribute__((packed));
 
-			/* The buffer extends for an amount defined by Count */
-			uint8_t Buffer;
-		} Read;
+struct FileWriteRequest : public FileOperationRequest {
+	fd_t FileHandle;
+	mode_t Capabilities;
+	size_t Offset;
+	size_t Size;
 
-		struct {
-			fd_t FileHandle;
-			mode_t Capabilities;
-			size_t Offset;
-			size_t Count;
+	/* The buffer extends for an amount defined by Size */
+	uint8_t Buffer;
+}__attribute__((packed));
 
-			/* The buffer extends for an amount defined by Count */
-			uint8_t Buffer;
-		} Write;
+struct FileOpenDirRequest : public FileOperationRequest {
+	dir_t DirectoryHandle;
 
-		struct {
-			dir_t DirectoryHandle;
+	const char Path[MAX_PATH_SIZE];
+}__attribute__((packed));
 
-			const char Path[MAX_PATH_SIZE];
-		} OpenDir;
+struct FileCloseDirRequest : public FileOperationRequest {
+	dir_t DirectoryHandle;
+	mode_t Capabilities;
+}__attribute__((packed));
 
-		struct {
-			fd_t FileHandle;
-			mode_t Capabilities;
-		} CloseDir;
+struct FileReadDirRequest : public FileOperationRequest {
+	dir_t Directory;
+	size_t Offset;
 
-		struct {
-			dir_t Directory;
-			size_t Offset;
-
-			DirNode NodeData;
-		} ReadDir;
-	} Data;
+	DirNode NodeData; /* The resulting data is put here */
 }__attribute__((packed));

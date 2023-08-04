@@ -18,22 +18,22 @@ public:
 	VirtualFilesystem();
 	~VirtualFilesystem();
 	
-	void DoFileOperation(FileOperationRequest *request, void *response, size_t *responseSize);
+	result_t DoFileOperation(FileOperationRequest *request);
 
 	filesystem_t RegisterFilesystem(uint32_t vendorID, uint32_t productID, void *instance, FSOperations *ops);
-	uintmax_t DoFilesystemOperation(filesystem_t fs, FSOperationRequest *request);
+	result_t DoFilesystemOperation(filesystem_t fs, FSOperationRequest *request);
 	void UnregisterFilesystem(filesystem_t fs);
 
 	void SetRootFS(filesystem_t fs);
-	VNode *ResolvePath(const char *path);
+	result_t ResolvePath(const char *path, VNode *node);
 private:
 	RegisteredFilesystemNode *AddNode(Filesystem *fs);
 	void RemoveNode(filesystem_t fs);
 	RegisteredFilesystemNode *FindNode(filesystem_t fs, RegisteredFilesystemNode **previous, bool *found);
 
-	VNode *RootNode;
-	
-	VNode *ProgressPath(VNode *current, const char *nextName);
+	filesystem_t RootFilesystem;
+
+	result_t ProgressPath(VNode *current, VNode *next, const char *nextName);
 
 	RegisteredFilesystemNode *BaseNode;
 

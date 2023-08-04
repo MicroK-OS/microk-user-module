@@ -19,35 +19,50 @@ VirtualFilesystem::~VirtualFilesystem() {
 	
 
 #define IF_IS_OURS( x ) \
-	if (node->FS->OwnerVendorID == 0 && node->FS->OwnerProductID == 0) return x
+	if ((x)->FS->OwnerVendorID == 0 && (x)->FS->OwnerProductID == 0)
 
-void VirtualFilesystem::DoFileOperation(FileOperationRequest *request, void *response, size_t *responseSize) {
+result_t VirtualFilesystem::DoFileOperation(FileOperationRequest *request) {
 	result_t result = 0;
 	switch(request->Request) {
 		case FOPS_CREATE: {
-			VNode *baseDir = ResolvePath(request->Data.Create.Path);
+			FileCreateRequest *createRequest = (FileCreateRequest*)request;
+			VNode baseDir;
+
+			result = ResolvePath(createRequest->Path, &baseDir);
+
+			if (result != 0) {
+				createRequest->Result = result;
+
+				break;
+			}
 		
-			bool found = false;
-			RegisteredFilesystemNode *previous; 
-			RegisteredFilesystemNode *node = FindNode(baseDir->FSDescriptor, &previous, &found);
-			VNode *createdNode = node->FS->Operations->CreateNode(node->FS->Instance, baseDir->Inode, request->Data.Create.Name, request->Data.Create.Properties);
+			FSCreateNodeRequest fsCreateRequest;
+			fsCreateRequest.MagicNumber = FS_OPERATION_REQUEST_MAGIC_NUMBER;
+			fsCreateRequest.Request = NODE_CREATE;
+			fsCreateRequest.Directory = baseDir.Inode;
+			Strcpy(fsCreateRequest.Name,createRequest->Name);
+			fsCreateRequest.Flags = createRequest->Properties;
 
-			if(createdNode == NULL) result = 0;
-			else result = 1;
+			result = DoFilesystemOperation(baseDir.FSDescriptor, &fsCreateRequest);
+			if(result != 0) {
+				createRequest->Result = result;
 
-			response = (void*)request;
-			*responseSize = sizeof(*request);
-			((FileOperationRequest*)response)->Result = result;
+				break;
+			}
+
+			result = 0;
+			createRequest->Result = result;
 			}
 			break;
 		default:
-			result = 0;
+			result = -EBADREQUEST;
 			break;
 	}
+
+	return result;
 }
 	
 filesystem_t VirtualFilesystem::RegisterFilesystem(uint32_t vendorID, uint32_t productID, void *instance, FSOperations *ops) {
-	/* It's us */
 	Filesystem *fs = new Filesystem;
 
 	fs->FSDescriptor = GetFSDescriptor();
@@ -66,76 +81,135 @@ filesystem_t VirtualFilesystem::RegisterFilesystem(uint32_t vendorID, uint32_t p
 	return fs->FSDescriptor;
 }
 	
-uintmax_t VirtualFilesystem::DoFilesystemOperation(filesystem_t fs, FSOperationRequest *request) {
+result_t VirtualFilesystem::DoFilesystemOperation(filesystem_t fs, FSOperationRequest *request) {
+	result_t result = 0;
+
 	bool found = false;
 	RegisteredFilesystemNode *previous; 
 	RegisteredFilesystemNode *node = FindNode(fs, &previous, &found);
 
-	if (node == NULL || !found) return 0;
-	if (request == NULL) return 0;
+	if (node == NULL || !found) return -ENODRIVER;
+	if (request == NULL) return -EBADREQUEST;
 
 	switch(request->Request) {
 		case NODE_CREATE:
-			IF_IS_OURS(node->FS->Operations->CreateNode(node->FS->Instance, request->Data.CreateNode.Directory, request->Data.CreateNode.Name, request->Data.CreateNode.Flags));
+			IF_IS_OURS(node) {
+				FSCreateNodeRequest *createRequest = (FSCreateNodeRequest*)request;
+				VNode *resultNode = node->FS->Operations->CreateNode(node->FS->Instance, createRequest->Directory, createRequest->Name, createRequest->Flags);
+				if(resultNode == NULL) {
+					result = -EFAULT;
+				} else {
+					result = 0;
+					Memcpy(&createRequest->ResultNode, resultNode, sizeof(VNode));
+				}
+
+				createRequest->Result = result;
+			}
 			break;
-		case NODE_DELETE:
+/*		case NODE_DELETE:
 			IF_IS_OURS(node->FS->Operations->DeleteNode(node->FS->Instance, request->Data.DeleteNode.Node));
-			break;
-		case NODE_GETBYNODE:
+			break;*/
+/*		case NODE_GETBYNODE:
 			IF_IS_OURS(node->FS->Operations->GetByInode(node->FS->Instance, request->Data.GetByNode.Node));
-			break;
+			break;*/
 		case NODE_GETBYNAME:
-			IF_IS_OURS(node->FS->Operations->GetByName(node->FS->Instance, request->Data.GetByName.Directory, request->Data.GetByName.Name));
+			IF_IS_OURS(node) {
+				FSGetByNameRequest *getByNameRequest = (FSGetByNameRequest*)request;
+				
+				VNode *resultNode = node->FS->Operations->GetByName(node->FS->Instance, getByNameRequest->Directory, getByNameRequest->Name);
+				if(resultNode == NULL) {
+					result = -EFAULT;
+				} else {
+					result = 0;
+					getByNameRequest->ResultNode = *resultNode;
+				}
+
+				getByNameRequest->Result = result;
+			}
 			break;
-		case NODE_GETBYINDEX:
+/*		case NODE_GETBYINDEX:
 			IF_IS_OURS(node->FS->Operations->GetByIndex(node->FS->Instance, request->Data.GetByIndex.Directory, request->Data.GetByIndex.Index));
-			break;
+			break;*/
 		case NODE_GETROOT:
-			IF_IS_OURS(node->FS->Operations->GetRootNode(node->FS->Instance));
+			IF_IS_OURS(node) {
+				FSGetRootRequest *getRootRequest = (FSGetRootRequest*)request;
+				VNode *resultNode = node->FS->Operations->GetRootNode(node->FS->Instance);
+
+				if(resultNode == NULL) {
+					result = -EFAULT;
+				} else {
+					result = 0;
+					getRootRequest->ResultNode = *resultNode;
+				}
+
+				getRootRequest->Result = result;
+			}
 			break;
 		default:
-			return 0;
+			return -EBADREQUEST;
 	}
-
-	return 0;
-}
-
-void VirtualFilesystem::SetRootFS(filesystem_t fs) {
-	FSOperationRequest request;
-	request.Request = NODE_GETROOT;
-	VNode *rootNode = DoFilesystemOperation(fs, &request);
-	
-	if(rootNode != NULL || rootNode != -1)
-		RootNode = rootNode;
-}
-
-VNode *VirtualFilesystem::ProgressPath(VNode *current, const char *nextName) {
-	FSOperationRequest request;
-
-	request.Request = NODE_GETBYNAME;
-	request.Data.GetByName.Directory = current->Inode;
-	Strcpy(request.Data.GetByName.Name, nextName);
-
-	VNode *result = DoFilesystemOperation(current->FSDescriptor, &request);
 
 	return result;
 }
 
-VNode *VirtualFilesystem::ResolvePath(const char *path) {
-	VNode *current = RootNode;
+void VirtualFilesystem::SetRootFS(filesystem_t fs) {
+	RootFilesystem = fs;
+}
 
-	const char *id = Strtok(path, "/");
-	if(id == NULL) return current;
+result_t VirtualFilesystem::ProgressPath(VNode *current, VNode *next, const char *nextName) {
+	result_t result = 0;
+	FSGetByNameRequest request;
 
-	while(true) {
-		current = ProgressPath(current, id);
-		if(current == NULL || current == -1) return NULL;
+	request.Request = NODE_GETBYNAME;
+	request.Directory = current->Inode;
+	Strcpy(request.Name, nextName);
 
-		id = Strtok(NULL, "/");
-		if(id == NULL) return current;
+	result = DoFilesystemOperation(current->FSDescriptor, &request);
+
+	if(result != 0) {
+		return result;
 	}
 
-	return NULL;
+	*next = request.ResultNode;
+
+	return result;
+}
+
+result_t VirtualFilesystem::ResolvePath(const char *path, VNode *node) {
+	result_t result = 0;
+
+	FSGetRootRequest request;
+	request.Request = NODE_GETROOT;
+	result = DoFilesystemOperation(RootFilesystem, &request);
+	if(request.Result != 0) {
+		return result;
+	}
+	
+	VNode current = request.ResultNode;
+	VNode next;
+
+	const char *id = Strtok(path, "/");
+	if(id == NULL) {
+		*node = current;
+		return result;
+	}
+
+	while(true) {
+		result = ProgressPath(&current, &next, id);
+		if(result != 0) {
+			return result;
+		}
+
+		current = next;
+
+		id = Strtok(NULL, "/");
+		if(id == NULL) {
+			*node = current;
+			return result;
+		}
+	}
+
+	return -ENOTPRESENT;
 }
 
 RegisteredFilesystemNode *VirtualFilesystem::AddNode(Filesystem *fs) {

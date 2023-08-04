@@ -1,4 +1,5 @@
 #pragma once
+#include <cdefs.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -26,7 +27,6 @@
 #define FOPS_CLOSEDIR            0x000A
 #define FOPS_READDIR             0x000B
 
-
 #define NODE_PROPERTY_FILE       0x0001
 #define NODE_PROPERTY_DIRECTORY  0x0002
 #define NODE_PROPERTY_CHARDEV    0x0004
@@ -36,6 +36,7 @@
 #define NODE_PROPERTY_MOUNTPOINT 0x0040
 
 #define FILE_OPERATION_REQUEST_MAGIC_NUMBER  0x4690738
+#define FS_OPERATION_REQUEST_MAGIC_NUMBER    0x5740336
 #define FILE_OPERATION_RESPONSE_MAGIC_NUMBER 0x7502513
 
 typedef uintmax_t filesystem_t;

@@ -34,11 +34,9 @@ int MessageHandler(MKMI_Message *msg, uint64_t *data) {
 	MKMI_Printf("Magic number: %d\r\n", *magicNumber);
 
 	if(*magicNumber == FILE_OPERATION_REQUEST_MAGIC_NUMBER) {
-		void *response;
-		size_t responseSize;
-		vfs->DoFileOperation((FileOperationRequest*)data, &response, &responseSize);
+		vfs->DoFileOperation((FileOperationRequest*)data);
 	
-		SendDirectMessage(msg->SenderVendorID, msg->SenderProductID, response, responseSize);
+		SendDirectMessage(msg->SenderVendorID, msg->SenderProductID, (uint8_t*)msg, msg->MessageSize);
 		return 0;
 	}
 
@@ -82,56 +80,6 @@ void VFSInit() {
 	rootRamfs->SetDescriptor(ramfsDesc);
 
 	vfs->SetRootFS(ramfsDesc);
-
-	FSOperationRequest request;
-	request.Request = NODE_GETROOT;
-	VNode *rootNode = vfs->DoFilesystemOperation(ramfsDesc, &request);
-
-	request.Request = NODE_CREATE;
-	request.Data.CreateNode.Directory = rootNode->Inode;
-	request.Data.CreateNode.Flags = NODE_PROPERTY_DIRECTORY;
-	Strcpy(request.Data.CreateNode.Name, "dev");
-
-	VNode *devNode = vfs->DoFilesystemOperation(ramfsDesc, &request);
-
-	request.Request = NODE_CREATE;
-	request.Data.CreateNode.Directory = devNode->Inode;
-	request.Data.CreateNode.Flags = NODE_PROPERTY_DIRECTORY;
-	Strcpy(request.Data.CreateNode.Name, "tty");
-
-	VNode *ttyNode = vfs->DoFilesystemOperation(ramfsDesc, &request);
-
-	request.Request = NODE_CREATE;
-	request.Data.CreateNode.Directory = ttyNode->Inode;
-	request.Data.CreateNode.Flags = NODE_PROPERTY_FILE;
-	Strcpy(request.Data.CreateNode.Name, "tty1");
-
-	VNode *ttyFile = vfs->DoFilesystemOperation(ramfsDesc, &request);
-
-	request.Request = NODE_CREATE;
-	request.Data.CreateNode.Directory = ttyNode->Inode;
-	request.Data.CreateNode.Flags = NODE_PROPERTY_FILE;
-	Strcpy(request.Data.CreateNode.Name, "tty2");
-
-	vfs->DoFilesystemOperation(ramfsDesc, &request);
-
-	request.Request = NODE_CREATE;
-	request.Data.CreateNode.Directory = devNode->Inode;
-	request.Data.CreateNode.Flags = NODE_PROPERTY_FILE;
-	Strcpy(request.Data.CreateNode.Name, "kmsg");
-
-	vfs->DoFilesystemOperation(ramfsDesc, &request);
-
-	const char *path = "/dev/kmsg";
-	MKMI_Printf("Resolving path: %s\r\n", path);
-	VNode *node = vfs->ResolvePath(path);
-	if (node == NULL) MKMI_Printf("%s not found.\r\n", path);
-	else MKMI_Printf("%s\'s inode: %d\r\n", path, node->Inode);
-
-	rootRamfs->ListDirectory(0);
-	rootRamfs->ListDirectory(devNode->Inode);
-	rootRamfs->ListDirectory(ttyNode->Inode);
-
 }
 
 void InitrdInit() {
