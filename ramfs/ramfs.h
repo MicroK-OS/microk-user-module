@@ -2,6 +2,10 @@
 #include "../vfs/typedefs.h"
 #include "../vfs/vnode.h"
 
+#define NODES_IN_VNODE_TABLE     0x0100
+#define BLOCKS_IN_BLOCK_TABLE    0x0100
+#define BLOCK_SIZE    0x1000
+
 struct InodeTableObject;
 
 struct DirectoryVNodeTable {
@@ -10,11 +14,21 @@ struct DirectoryVNodeTable {
 	DirectoryVNodeTable *NextTable;
 };
 
+struct BlockTable {
+	uint8_t *Blocks[BLOCKS_IN_BLOCK_TABLE];
+
+	BlockTable *NextTable;
+};
+
 struct InodeTableObject {
 	bool Available = true;
 
 	VNode NodeData;
-	DirectoryVNodeTable *DirectoryTable;
+
+	union {
+		BlockTable *BlockTable;
+		DirectoryVNodeTable *DirectoryTable;
+	};
 };
 
 class RamFS {
@@ -61,8 +75,16 @@ public:
 	static VNode *GetRootNodeWrapper(void *instance) {
 		return static_cast<RamFS*>(instance)->GetRootNode();
 	}
+	
+	size_t ReadNode(const inode_t node, const size_t offset, const size_t size, void *buffer);
+	static size_t ReadNodeWrapper(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer) {
+		return static_cast<RamFS*>(instance)->ReadNode(node, offset, size, buffer);
+	}
 
-
+	size_t WriteNode(const inode_t node, const size_t offset, const size_t size, void *buffer);
+	static size_t WriteNodeWrapper(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer) {
+		return static_cast<RamFS*>(instance)->WriteNode(node, offset, size, buffer);
+	}
 private:
 	filesystem_t Descriptor;
 

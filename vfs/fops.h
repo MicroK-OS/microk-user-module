@@ -11,8 +11,8 @@ struct FSOperations {
 	VNode *(*GetByIndex)(void *instance, const inode_t directory, const size_t index);
 	VNode *(*GetRootNode)(void *instance);
 	
-//	size_t (*WriteNode)(void *instance, const inode_t node, );
-//	size_t (*ReadNode)(void *instance, const inode_t node, );
+	size_t (*ReadNode)(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer);
+	size_t (*WriteNode)(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer);
 };
 
 struct FSOperationRequest {
@@ -56,6 +56,24 @@ struct FSGetByIndexRequest : public FSOperationRequest {
 
 struct FSGetRootRequest : public FSOperationRequest {
 	VNode ResultNode;
+}__attribute__((packed));
+
+struct FSReadNodeRequest : public FSOperationRequest {
+	inode_t Node;
+	size_t Offset;
+	size_t Size;
+
+	/* The buffer extends for an amount defined by Size */
+	uint8_t Buffer;
+}__attribute__((packed));
+
+struct FSWriteNodeRequest : public FSOperationRequest {
+	inode_t Node;
+	size_t Offset;
+	size_t Size;
+
+	/* The buffer extends for an amount defined by Size */
+	uint8_t Buffer;
 }__attribute__((packed));
 
 

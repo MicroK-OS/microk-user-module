@@ -74,6 +74,8 @@ void VFSInit() {
 	ramfsOps->GetByName = rootRamfs->GetByNameWrapper;
 	ramfsOps->GetByIndex = rootRamfs->GetByIndexWrapper;
 	ramfsOps->GetRootNode = rootRamfs->GetRootNodeWrapper;
+	ramfsOps->ReadNode = rootRamfs->ReadNodeWrapper;
+	ramfsOps->WriteNode = rootRamfs->WriteNodeWrapper;
 
 	ramfsDesc = vfs->RegisterFilesystem(0, 0, rootRamfs, ramfsOps);
 

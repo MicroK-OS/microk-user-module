@@ -6,8 +6,6 @@
 #define MAX_NAME_SIZE            0x0100
 #define MAX_PATH_SIZE            0x1000
 
-#define NODES_IN_VNODE_TABLE     0x0040
-
 #define NODE_CREATE              0x0001
 #define NODE_DELETE              0x0002
 #define NODE_GETBYNODE           0x0003
