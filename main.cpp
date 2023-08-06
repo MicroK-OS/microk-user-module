@@ -133,9 +133,6 @@ void VFSInit() {
 	Free(writeRequest);
 	Free(readRequest);
 
-	MKMI_Printf("Done!\r\n");
-
-	while(true);
 }
 
 void InitrdInit() {
