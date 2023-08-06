@@ -110,7 +110,8 @@ void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directo
 
 		MKMI_Printf("Result: %d\r\n", createRequest->Result);
 	
-		if(!isDirectory) {/*
+		if(!isDirectory) {
+			/*
 			request->Request = FOPS_OPEN;
 
 			Memset(request->Data.Open.Path, 0, MAX_PATH_SIZE);

@@ -11,8 +11,8 @@ struct FSOperations {
 	VNode *(*GetByIndex)(void *instance, const inode_t directory, const size_t index);
 	VNode *(*GetRootNode)(void *instance);
 	
-	size_t (*ReadNode)(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer);
-	size_t (*WriteNode)(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer);
+	intmax_t (*ReadNode)(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer);
+	intmax_t (*WriteNode)(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer);
 };
 
 struct FSOperationRequest {

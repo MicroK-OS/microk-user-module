@@ -82,6 +82,60 @@ void VFSInit() {
 	rootRamfs->SetDescriptor(ramfsDesc);
 
 	vfs->SetRootFS(ramfsDesc);
+
+	intmax_t result = 0;
+
+	FSGetRootRequest rootRequest;
+	rootRequest.Request = NODE_GETROOT;
+	result = vfs->DoFilesystemOperation(ramfsDesc, &rootRequest);
+	if(rootRequest.Result != 0) {
+		MKMI_Printf("Getting root failed.\r\n");
+	}
+	
+	FSCreateNodeRequest createRequest;
+	createRequest.Request = NODE_CREATE;
+	createRequest.Directory = rootRequest.ResultNode.Inode;
+	Strcpy(createRequest.Name, "README");
+	createRequest.Flags = NODE_PROPERTY_FILE;
+	result = vfs->DoFilesystemOperation(ramfsDesc, &createRequest);
+	if(createRequest.Result != 0) {
+		MKMI_Printf("Node creation failed.\r\n");
+	}
+
+	const char *writeData = "Hello, world!";
+	size_t writeSize = Strlen(writeData);
+	size_t requestSize = sizeof(FSWriteNodeRequest) + writeSize + 1;
+
+	FSWriteNodeRequest *writeRequest = (FSWriteNodeRequest*)Malloc(requestSize);
+	Memset((void*)writeRequest, 0, requestSize);
+
+	writeRequest->Request = NODE_WRITE;
+	writeRequest->Node = createRequest.ResultNode.Inode;
+	writeRequest->Offset = 0;
+	writeRequest->Size = writeSize;
+	Memcpy(&writeRequest->Buffer, writeData, writeSize);
+
+	result = vfs->DoFilesystemOperation(ramfsDesc, writeRequest);
+	MKMI_Printf("Node write: %d\r\n", writeRequest->Result);
+
+	FSReadNodeRequest *readRequest = (FSReadNodeRequest*)Malloc(requestSize);
+	Memset((void*)readRequest, 0, requestSize);
+
+	readRequest->Request = NODE_READ;
+	readRequest->Node = createRequest.ResultNode.Inode;
+	readRequest->Offset = 0;
+	readRequest->Size = writeSize;
+
+	result = vfs->DoFilesystemOperation(ramfsDesc, readRequest);
+	MKMI_Printf("Node read: %d\r\n", readRequest->Result);
+	MKMI_Printf("Read result: %s\r\n", &readRequest->Buffer);
+
+	Free(writeRequest);
+	Free(readRequest);
+
+	MKMI_Printf("Done!\r\n");
+
+	while(true);
 }
 
 void InitrdInit() {

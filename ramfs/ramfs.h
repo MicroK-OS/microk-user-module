@@ -76,13 +76,13 @@ public:
 		return static_cast<RamFS*>(instance)->GetRootNode();
 	}
 	
-	size_t ReadNode(const inode_t node, const size_t offset, const size_t size, void *buffer);
-	static size_t ReadNodeWrapper(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer) {
+	intmax_t ReadNode(const inode_t node, const size_t offset, const size_t size, void *buffer);
+	static intmax_t ReadNodeWrapper(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer) {
 		return static_cast<RamFS*>(instance)->ReadNode(node, offset, size, buffer);
 	}
 
-	size_t WriteNode(const inode_t node, const size_t offset, const size_t size, void *buffer);
-	static size_t WriteNodeWrapper(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer) {
+	intmax_t WriteNode(const inode_t node, const size_t offset, const size_t size, void *buffer);
+	static intmax_t WriteNodeWrapper(void *instance, const inode_t node, const size_t offset, const size_t size, void *buffer) {
 		return static_cast<RamFS*>(instance)->WriteNode(node, offset, size, buffer);
 	}
 private:

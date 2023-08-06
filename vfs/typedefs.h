@@ -12,6 +12,8 @@
 #define NODE_GETBYNAME           0x0004
 #define NODE_GETBYINDEX          0x0005
 #define NODE_GETROOT             0x0006
+#define NODE_READ                0x0007
+#define NODE_WRITE               0x0008
 
 #define FOPS_CREATE              0x0001
 #define FOPS_DELETE              0x0002

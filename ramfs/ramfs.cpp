@@ -115,7 +115,12 @@ VNode *RamFS::CreateNode(const inode_t directory, const char name[MAX_NAME_SIZE]
 
 				if(found) break;
 
-				if(table->NextTable == NULL) return 0;
+				if(table->NextTable == NULL) {
+					table->NextTable = new DirectoryVNodeTable;
+					table->NextTable->NextTable = NULL;
+					if (table->NextTable == NULL || table->NextTable == -1) return 0;
+					Memset(table->NextTable->Elements, 0, NODES_IN_VNODE_TABLE * sizeof(uintptr_t));
+				}
 				table = table->NextTable;
 			}
 
@@ -224,17 +229,17 @@ VNode *RamFS::GetRootNode() {
 	return node;
 }
 
-size_t RamFS::ReadNode(const inode_t node, const size_t offset, const size_t size, void *buffer) {
-	if (node > MaxInodes) return 0;
+intmax_t RamFS::ReadNode(const inode_t node, const size_t offset, const size_t size, void *buffer) {
+	if (node > MaxInodes) return -1;
 
-	InodeTableObject *dir = &InodeTable[node];
+	InodeTableObject *file = &InodeTable[node];
 
-	if(dir->Available) return 0;
-	if((dir->NodeData.Properties & NODE_PROPERTY_DIRECTORY)) return 0;
+	if(file->Available) return -1;
+/*	if((file->NodeData.Properties & NODE_PROPERTY_DIRECTORY)) return -1; */
 	
-	if(dir->BlockTable == NULL) return 0;
+	if(file->BlockTable == NULL) return -1;
 
-	BlockTable *table = dir->BlockTable;
+	BlockTable *table = file->BlockTable;
 
 	size_t startIndexInBlock = offset % BLOCK_SIZE;
 	size_t startRoundedOffset = offset - offset % BLOCK_SIZE;
@@ -248,7 +253,7 @@ size_t RamFS::ReadNode(const inode_t node, const size_t offset, const size_t siz
 	size_t endTablesToCross = (endRoundedOffset % BLOCK_SIZE - endBlockIndex) / BLOCKS_IN_BLOCK_TABLE;
 
 	for (size_t i = 0; i < startTablesToCross; ++i) {
-		if(table->NextTable == NULL) return 0;
+		if(table->NextTable == NULL) return -1;
 		table = table->NextTable;
 	}
 
@@ -258,22 +263,27 @@ size_t RamFS::ReadNode(const inode_t node, const size_t offset, const size_t siz
 	size_t index = startIndexInBlock;
 	do {
 		while(block < BLOCKS_IN_BLOCK_TABLE) {
-			if(table->Blocks[block] == NULL || table->Blocks[block] == -1) return 0;
+			if(readAmount >= size) return readAmount;
+
+			if(table->Blocks[block] == NULL || table->Blocks[block] == -1) return -1;
 
 			if(crossedTables == endTablesToCross - 1 && block == endBlockIndex - 1) {
 				Memcpy(buffer + readAmount, &table->Blocks[block][index], BLOCK_SIZE - endBlockIndex - index);
 				readAmount += BLOCK_SIZE - endBlockIndex - index;
+			} else if(size - readAmount + index < BLOCK_SIZE) {
+				Memcpy((uintptr_t)buffer + readAmount, &table->Blocks[block][index], size);
+				readAmount += size;
 			} else {
 				Memcpy(buffer + readAmount, &table->Blocks[block][index], BLOCK_SIZE - index);
 				readAmount += BLOCK_SIZE - index;
 			}
-			
+
 			index = 0;
 			++block;
 		}
 
 		if (crossedTables < endTablesToCross) {
-			if(table->NextTable == NULL) return 0;
+			if(table->NextTable == NULL) return -1;
 			table = table->NextTable;
 		} else {
 			break;
@@ -283,17 +293,17 @@ size_t RamFS::ReadNode(const inode_t node, const size_t offset, const size_t siz
 	return readAmount;
 }
 
-size_t RamFS::WriteNode(const inode_t node, const size_t offset, const size_t size, void *buffer) {
-	if (node > MaxInodes) return 0;
+intmax_t RamFS::WriteNode(const inode_t node, const size_t offset, const size_t size, void *buffer) {
+	if (node > MaxInodes) return -1;
 
-	InodeTableObject *dir = &InodeTable[node];
+	InodeTableObject *file = &InodeTable[node];
 
-	if(dir->Available) return 0;
-	if((dir->NodeData.Properties & NODE_PROPERTY_DIRECTORY)) return 0;
+	if(file->Available) return -1;
+/*	if(file->NodeData.Properties & NODE_PROPERTY_DIRECTORY) return -1;*/
 	
-	if(dir->BlockTable == NULL) return 0;
+	if(file->BlockTable == NULL) return -1;
 
-	BlockTable *table = dir->BlockTable;
+	BlockTable *table = file->BlockTable;
 
 	size_t startIndexInBlock = offset % BLOCK_SIZE;
 	size_t startRoundedOffset = offset - offset % BLOCK_SIZE;
@@ -307,7 +317,7 @@ size_t RamFS::WriteNode(const inode_t node, const size_t offset, const size_t si
 	size_t endTablesToCross = (endRoundedOffset % BLOCK_SIZE - endBlockIndex) / BLOCKS_IN_BLOCK_TABLE;
 
 	for (size_t i = 0; i < startTablesToCross; ++i) {
-		if(table->NextTable == NULL) return 0;
+		if(table->NextTable == NULL) return -1;
 		table = table->NextTable;
 	}
 
@@ -315,25 +325,33 @@ size_t RamFS::WriteNode(const inode_t node, const size_t offset, const size_t si
 	size_t writtenAmount = 0;
 	size_t block = startBlockIndex;
 	size_t index = startIndexInBlock;
+
 	do {
 		while(block < BLOCKS_IN_BLOCK_TABLE) {
-			if(table->Blocks[block] == NULL || table->Blocks[block] == -1) 
+			if(writtenAmount >= size) return writtenAmount;
+
+			if(table->Blocks[block] == NULL || table->Blocks[block] == -1) {
 				table->Blocks[block] = Malloc(BLOCK_SIZE);
+				Memset(table->Blocks[block], 0, BLOCK_SIZE);
+			}
 
 			if(crossedTables == endTablesToCross - 1 && block == endBlockIndex - 1) {
 				Memcpy(&table->Blocks[block][index], buffer + writtenAmount, BLOCK_SIZE - endBlockIndex - index);
 				writtenAmount += BLOCK_SIZE - endBlockIndex - index;
+			} else if(size - writtenAmount + index < BLOCK_SIZE) {
+				Memcpy(&table->Blocks[block][index], buffer + writtenAmount, size);
+				writtenAmount += size;
 			} else {
 				Memcpy(&table->Blocks[block][index], buffer + writtenAmount, BLOCK_SIZE - index);
 				writtenAmount += BLOCK_SIZE - index;
 			}
-			
+
 			index = 0;
 			++block;
 		}
 
 		if (crossedTables < endTablesToCross) {
-			if(table->NextTable == NULL) return 0;
+			if(table->NextTable == NULL) return -1;
 			table = table->NextTable;
 		} else {
 			break;
@@ -341,5 +359,4 @@ size_t RamFS::WriteNode(const inode_t node, const size_t offset, const size_t si
 	} while(true);
 
 	return writtenAmount;
-
 }

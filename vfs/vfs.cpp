@@ -100,7 +100,7 @@ result_t VirtualFilesystem::DoFilesystemOperation(filesystem_t fs, FSOperationRe
 					result = -EFAULT;
 				} else {
 					result = 0;
-					Memcpy(&createRequest->ResultNode, resultNode, sizeof(VNode));
+					createRequest->ResultNode = *resultNode;
 				}
 
 				createRequest->Result = result;
@@ -143,6 +143,34 @@ result_t VirtualFilesystem::DoFilesystemOperation(filesystem_t fs, FSOperationRe
 				}
 
 				getRootRequest->Result = result;
+			}
+			break;
+		case NODE_READ:
+			IF_IS_OURS(node) {
+				FSReadNodeRequest *nodeReadRequest = (FSReadNodeRequest*)request;
+				intmax_t readAmount = node->FS->Operations->ReadNode(node->FS->Instance, nodeReadRequest->Node, nodeReadRequest->Offset, nodeReadRequest->Size, (void*)&nodeReadRequest->Buffer);
+
+				if(readAmount < 0) {
+					result = -EFAULT;
+				} else {
+					result = readAmount;
+				}
+
+				nodeReadRequest->Result = result;
+			}
+			break;
+		case NODE_WRITE:
+			IF_IS_OURS(node) {
+				FSWriteNodeRequest *nodeWriteRequest = (FSWriteNodeRequest*)request;
+				intmax_t writeAmount = node->FS->Operations->WriteNode(node->FS->Instance, nodeWriteRequest->Node, nodeWriteRequest->Offset, nodeWriteRequest->Size, (void*)&nodeWriteRequest->Buffer);
+
+				if(writeAmount < 0) {
+					result = -EFAULT;
+				} else {
+					result = writeAmount;
+				}
+
+				nodeWriteRequest->Result = result;
 			}
 			break;
 		default:
