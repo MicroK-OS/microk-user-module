@@ -16,14 +16,12 @@
 #include "vfs/vfs.h"
 #include "vfs/ustar.h"
 #include "ramfs/ramfs.h"
-#include "fb/fb.h"
 
 extern "C" uint32_t VendorID = 0xCAFEBABE;
 extern "C" uint32_t ProductID = 0xDEADBEEF;
 
 void VFSInit();
 void InitrdInit();
-void FBInit();
 	
 VirtualFilesystem *vfs;
 RamFS *rootRamfs;
@@ -49,7 +47,6 @@ extern "C" size_t OnInit() {
 
 	VFSInit();
 	InitrdInit();
-	FBInit();	
 
 	return 0;
 }
@@ -102,7 +99,7 @@ void VFSInit() {
 		MKMI_Printf("Node creation failed.\r\n");
 	}
 
-	const char *writeData = "Hello, world!";
+	const char *writeData = "Hello, world! You seem to be able to store easily a lot of data.";
 	size_t writeSize = Strlen(writeData);
 	size_t requestSize = sizeof(FSWriteNodeRequest) + writeSize + 1;
 
@@ -193,37 +190,5 @@ void InitrdInit() {
 
 	} else {
 		MKMI_Printf("No initrd found");
-	}
-}
-
-void FBInit() {
-	MKMI_Printf("Probing for framebuffer.\r\n");
-
-	uintptr_t fbAddr;
-	size_t fbSize;
-	Syscall(SYSCALL_FILE_OPEN, "FB:0", &fbAddr, &fbSize, 0, 0, 0);
-
-	/* Here we check whether it exists 
-	 * If it isn't there, just skip this step
-	 */
-	if (fbSize != 0 && fbAddr != 0) {
-		/* Make it accessible in memory */
-		MKMI_Printf("Mapping...\r\n");
-		VMMap(fbAddr, fbAddr, fbSize, 0);
-	
-		Framebuffer fbData;
-		Memcpy(&fbData, fbAddr, sizeof(fbData));
-
-		MKMI_Printf("fb0 starting from 0x%x.\r\n", fbData.Address);
-		InitFB(&fbData);
-
-		PrintScreen(" __  __  _                _  __\n"
-			    "|  \\/  |(_) __  _ _  ___ | |/ /\n"
-			    "| |\\/| || |/ _|| '_|/ _ \\|   < \n"
-			    "|_|  |_||_|\\__||_|  \\___/|_|\\_\\\n\n");
-
-		PrintScreen("The user module is starting...\n");
-	} else {
-		MKMI_Printf("No framebuffer found.\r\n");
 	}
 }
