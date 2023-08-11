@@ -76,7 +76,6 @@ struct FSWriteNodeRequest : public FSOperationRequest {
 	uint8_t Buffer;
 }__attribute__((packed));
 
-
 struct FileOperations {
 	/* Universal */
 	result_t (*Create)(const char *path, const char *name, property_t properties);

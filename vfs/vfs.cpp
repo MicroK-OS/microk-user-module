@@ -54,6 +54,46 @@ result_t VirtualFilesystem::DoFileOperation(FileOperationRequest *request) {
 			createRequest->Result = result;
 			}
 			break;
+		case FOPS_OPEN: {
+			FileOpenRequest *createRequest = (FileOpenRequest*)request;
+
+			}
+			break;
+		case FOPS_CLOSE: {
+			FileCloseRequest *closeRequest = (FileCloseRequest*)request;
+
+			}
+			break;
+		case FOPS_READ: {
+			FileReadRequest *readRequest = (FileReadRequest*)request;
+
+			fd_t fileHandle = readRequest->FileHandle;
+
+			/* Get our file through our handle */
+			
+			/* Fun fact: FSReadNodeRequest and FileReadRequest are of the same size 
+			   So, we can avoid any allocation */
+			FSReadNodeRequest *fsReadNodeRequest = (FSReadNodeRequest*)request;
+			fsReadNodeRequest->MagicNumber = FS_OPERATION_REQUEST_MAGIC_NUMBER;
+			fsReadNodeRequest->Request = NODE_READ;
+			fsReadNodeRequest->Node = /* Get node */ 0;
+			fsReadNodeRequest->Offset = readRequest->Offset;
+			fsReadNodeRequest->Size = readRequest->Size;
+
+			result = DoFilesystemOperation(0 /* FS Descriptor */, fsReadNodeRequest);
+			if(result != 0) {
+				readRequest->Result = result;
+
+				break;
+			}
+
+			result = 0;
+			readRequest->Result = result;
+			}
+			break;
+		case FOPS_WRITE: {
+			}
+			break;
 		default:
 			result = -EBADREQUEST;
 			break;

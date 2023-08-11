@@ -39,10 +39,11 @@
 #define FS_OPERATION_REQUEST_MAGIC_NUMBER    0x5740336
 #define FILE_OPERATION_RESPONSE_MAGIC_NUMBER 0x7502513
 
-typedef uintmax_t filesystem_t;
-typedef uintmax_t inode_t;
-typedef uint32_t property_t;
-typedef uint32_t mode_t;
+typedef intmax_t filesystem_t;
 typedef intmax_t fd_t;
+typedef intmax_t inode_t;
 typedef intmax_t dir_t;
 typedef intmax_t result_t;
+typedef uint32_t property_t;
+typedef uint32_t mode_t;
+
