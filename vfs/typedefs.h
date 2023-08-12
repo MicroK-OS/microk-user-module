@@ -26,6 +26,7 @@
 #define FOPS_OPENDIR             0x0009
 #define FOPS_CLOSEDIR            0x000A
 #define FOPS_READDIR             0x000B
+#define FOPS_EXECUTE             0x000C
 
 #define NODE_PROPERTY_FILE       0x0001
 #define NODE_PROPERTY_DIRECTORY  0x0002

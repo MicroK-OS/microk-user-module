@@ -94,6 +94,23 @@ result_t VirtualFilesystem::DoFileOperation(FileOperationRequest *request) {
 		case FOPS_WRITE: {
 			}
 			break;
+		case FOPS_EXECUTE: {
+			FileExecuteRequest *executeRequest = (FileExecuteRequest*)request;
+			VNode executable;
+
+			result = ResolvePath(executeRequest->Path, &executable);
+
+			if (result != 0) {
+				executeRequest->Result = result;
+
+				break;
+			}
+
+			/* Here we open and read the data of the file, then we ask the kernel to
+			   start it up. We can use the message buffer to avoid eccessive copying */
+
+			}
+			break;
 		default:
 			result = -EBADREQUEST;
 			break;

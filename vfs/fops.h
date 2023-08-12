@@ -93,6 +93,8 @@ struct FileOperations {
 	dir_t (*OpenDir)(const char *path);
 	result_t (*CloseDir)(dir_t directory);
 	result_t (*ReadDir)(dir_t directory, size_t offset, DirNode *dirNode);
+	
+	result_t (*Execute)(const char *path, property_t options);
 };
 
 struct FileOperationRequest {
@@ -103,27 +105,27 @@ struct FileOperationRequest {
 }__attribute__((packed));
 
 struct FileCreateRequest : public FileOperationRequest {
-	const char Path[MAX_PATH_SIZE];
-	const char Name[MAX_NAME_SIZE];
+	char Path[MAX_PATH_SIZE];
+	char Name[MAX_NAME_SIZE];
 	property_t Properties;
 }__attribute__((packed));
 
 struct FileDeleteRequest : public FileOperationRequest {
-	const char Path[MAX_PATH_SIZE];
+	char Path[MAX_PATH_SIZE];
 }__attribute__((packed));
 
 struct FileRenameRequest : public FileOperationRequest {
-	const char InitialPath[MAX_PATH_SIZE];
-	const char NewPath[MAX_PATH_SIZE];
+	char InitialPath[MAX_PATH_SIZE];
+	char NewPath[MAX_PATH_SIZE];
 }__attribute__((packed));
 
 struct FileChmodRequest : public FileOperationRequest {
-	const char Path[MAX_PATH_SIZE];
+	char Path[MAX_PATH_SIZE];
 	property_t Properties;
 }__attribute__((packed));
 
 struct FileOpenRequest : public FileOperationRequest {
-	const char Path[MAX_PATH_SIZE];
+	char Path[MAX_PATH_SIZE];
 	mode_t Capabilities;
 }__attribute__((packed));
 
@@ -167,4 +169,9 @@ struct FileReadDirRequest : public FileOperationRequest {
 	size_t Offset;
 
 	DirNode NodeData; /* The resulting data is put here */
+}__attribute__((packed));
+	
+struct FileExecuteRequest : public FileOperationRequest {
+	char Path[MAX_PATH_SIZE];
+	property_t Options;
 }__attribute__((packed));

@@ -150,7 +150,8 @@ void InitrdInit() {
 		address += HIGHER_HALF;
 		MKMI_Printf("Loading file initrd.tar from 0x%x with size %dkb.\r\n", address, size / 1024);
 
-		UnpackArchive(vfs, address, "/");
+/* TODO: Fix
+		UnpackArchive(vfs, address, "/");*/
 		rootRamfs->ListDirectory(0);
 
 		uint8_t *configFile;

@@ -57,10 +57,9 @@ void LoadArchive(uint8_t *archive) {
 void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directory) {
 	unsigned char *ptr = archive;
 
-	uint8_t data[sizeof(FileCreateRequest)] = {0};
-	FileCreateRequest *createRequest = (FileCreateRequest*)&data;
-	createRequest->MagicNumber = FILE_OPERATION_REQUEST_MAGIC_NUMBER;
-	createRequest->Request = FOPS_CREATE;
+	FileCreateRequest createRequest;
+	createRequest.MagicNumber = FILE_OPERATION_REQUEST_MAGIC_NUMBER;
+	createRequest.Request = FOPS_CREATE;
 
 	while (!Memcmp(ptr + 257, "ustar", 5)) { // Until we have a valid header
 		TarHeader *header = (TarHeader*)ptr;
@@ -98,17 +97,17 @@ void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directo
 		
 		MKMI_Printf("Path: %s  %s\r\n", path, name);
 		
-		createRequest->Properties = 0;
-		createRequest->Properties |= isDirectory ? NODE_PROPERTY_DIRECTORY : NODE_PROPERTY_FILE;
+		createRequest.Properties = 0;
+		createRequest.Properties |= isDirectory ? NODE_PROPERTY_DIRECTORY : NODE_PROPERTY_FILE;
 
-		Memset(createRequest->Path, 0, MAX_PATH_SIZE);
-		Strcpy(createRequest->Path, path);
-		Memset(createRequest->Name, 0, MAX_PATH_SIZE);
-		Strcpy(createRequest->Name, name);
+		Memset(createRequest.Path, 0, MAX_PATH_SIZE);
+		Strcpy(createRequest.Path, path);
+		Memset(createRequest.Name, 0, MAX_PATH_SIZE);
+		Strcpy(createRequest.Name, name);
 
-		vfs->DoFileOperation(createRequest);
+		vfs->DoFileOperation(&createRequest);
 
-		MKMI_Printf("Result: %d\r\n", createRequest->Result);
+		MKMI_Printf("Result: %d\r\n", createRequest.Result);
 	
 		if(!isDirectory) {
 			/*
