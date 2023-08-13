@@ -102,7 +102,7 @@ void UnpackArchive(VirtualFilesystem *vfs, uint8_t *archive, const char *directo
 
 		Memset(createRequest.Path, 0, MAX_PATH_SIZE);
 		Strcpy(createRequest.Path, path);
-		Memset(createRequest.Name, 0, MAX_PATH_SIZE);
+		Memset(createRequest.Name, 0, MAX_NAME_SIZE);
 		Strcpy(createRequest.Name, name);
 
 		vfs->DoFileOperation(&createRequest);
