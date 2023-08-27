@@ -1,8 +1,6 @@
 #include "ramfs.h"
 
-#include <mkmi_memory.h>
-#include <mkmi_string.h>
-#include <mkmi_log.h>
+#include <mkmi.h>
 
 RamFS::RamFS(inode_t maxInodes) {
 	Descriptor = 0;

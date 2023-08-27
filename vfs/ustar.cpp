@@ -3,10 +3,7 @@
 #include "typedefs.h"
 #include "vfs.h"
 
-#include <mkmi_log.h>
-#include <mkmi_memory.h>
-#include <mkmi_string.h>
-#include <mkmi_syscall.h>
+#include <mkmi.h>
 
 static int oct2bin(unsigned char *str, int size) {
         int n = 0;

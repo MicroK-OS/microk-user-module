@@ -2,9 +2,7 @@
 #include "fops.h"
 #include "typedefs.h"
 
-#include <mkmi_memory.h>
-#include <mkmi_string.h>
-#include <mkmi_log.h>
+#include <mkmi.h>
 
 VirtualFilesystem::VirtualFilesystem() {
 	BaseNode = new RegisteredFilesystemNode;
