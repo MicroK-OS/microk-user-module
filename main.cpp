@@ -39,6 +39,8 @@ extern "C" size_t OnInit() {
 	SetMessageHandlerCallback(MessageHandler);
 	Syscall(SYSCALL_MODULE_MESSAGE_HANDLER, MKMI_MessageHandler, 0, 0, 0, 0, 0);
 
+	MKMI_Printf("User TCB magic: 0x%x\r\n", *(uint32_t*)(0x7fffffffe000));
+
 	VFSInit();
 	InitrdInit();
 	
