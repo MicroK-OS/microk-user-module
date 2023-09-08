@@ -43,6 +43,8 @@ extern "C" size_t OnInit() {
 
 	VFSInit();
 	InitrdInit();
+
+	Syscall(SYSCALL_MODULE_SECTION_REGISTER, "VFS", VendorID, ProductID, 0, 0 ,0);
 	
 	return 0;
 }
@@ -54,8 +56,6 @@ extern "C" size_t OnExit() {
 }
 
 void VFSInit() {
-	Syscall(SYSCALL_MODULE_SECTION_REGISTER, "VFS", VendorID, ProductID, 0, 0 ,0);
-
 	vfs = new VirtualFilesystem();
 	rootRamfs = new RamFS(2048);
 
@@ -125,7 +125,6 @@ void VFSInit() {
 
 	Free(writeRequest);
 	Free(readRequest);
-
 }
 
 void InitrdInit() {

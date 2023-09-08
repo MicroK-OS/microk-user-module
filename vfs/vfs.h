@@ -7,6 +7,21 @@
 #include "fs.h"
 #include "fops.h"
 
+struct FileHandle {
+	fd_t FileDescriptor;
+
+	filesystem_t FSDescriptor;
+	inode_t Inode;
+
+	FileHandle *Next;
+	FileHandle *Previous;
+};
+
+struct FileList {
+	FileHandle *Head;
+	FileHandle *Tail;
+};
+
 struct RegisteredFilesystemNode {
 	Filesystem *FS;
 
@@ -36,6 +51,8 @@ private:
 	result_t ProgressPath(VNode *current, VNode *next, const char *nextName);
 
 	RegisteredFilesystemNode *BaseNode;
+
+	FileList OpenFiles;
 
 	filesystem_t MaxFSDescriptor = 0;
 	filesystem_t GetFSDescriptor() { return ++MaxFSDescriptor; }
