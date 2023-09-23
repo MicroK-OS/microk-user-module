@@ -55,15 +55,39 @@ struct TableListElement {
 	uintptr_t TablePointer;
 }__attribute__((packed));
 
+struct KBST : public TableHeader {
+	size_t FreePhysicalMemory;
+	size_t UsedPhysicalMemory;
+	size_t ReservedPhysicalMemory;
+}__attribute__((packed));
+
 void PrintTableList(TableListElement *list, size_t elements) {
 	for (size_t i = 0; i < elements; i++) {
 		char tableSig[5] = { '\0' };
 		Memcpy(tableSig, list[i].Signature, 4);
 
-		MKMI_Printf("  Table:\r\n"
-			    "   Signature:                %s\r\n"
-			    "   Pointer:                  0x%x\r\n",
+		MKMI_Printf("Table:\r\n"
+			    " Signature:                  %s\r\n"
+			    " Pointer:                    0x%x\r\n",
 			    tableSig, list[i].TablePointer);
+
+		if(list[i].TablePointer != 0) {
+			TableHeader *table = (TableHeader*)list[i].TablePointer;
+			MKMI_Printf("%s:\r\n"
+				    " Signature:                  %s\r\n"
+				    " Revision:                   0x%x\r\n"
+				    " Cheksum:                    0x%x\r\n",
+				    tableSig, tableSig, table->Revision, table->Checksum);
+
+			if(Strcmp(tableSig, "KBST") == 0) {
+				KBST *kbst = (KBST*)table;
+				MKMI_Printf(" Memory:\r\n"
+					    "  Free physical memory:       %dkb\r\n"
+					    "  Used physical memory:       %dkb\r\n"
+					    "  Reserved physical memory:   %dkb\r\n",
+					    kbst->FreePhysicalMemory / 1024, kbst->UsedPhysicalMemory / 1024, kbst->ReservedPhysicalMemory / 1024);
+			}
+		}
 	}
 }
 
