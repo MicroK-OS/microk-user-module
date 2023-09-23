@@ -35,11 +35,66 @@ int MessageHandler(MKMI_Message *msg, uint64_t *data) {
 	return -1;
 }
 
+struct TableHeader {
+	uint8_t Signature[4];
+	uint8_t Revision;
+
+	uint8_t Checksum;
+}__attribute__((packed));
+
+struct UserTCB : public TableHeader {
+	uint8_t SystemTables;
+	uint32_t SystemTableListOffset;
+
+	uint8_t ServiceTables;
+	uint32_t ServiceTableListOffset;
+}__attribute__((packed));
+
+struct TableListElement {
+	uint8_t Signature[4];
+	uintptr_t TablePointer;
+}__attribute__((packed));
+
+void PrintTableList(TableListElement *list, size_t elements) {
+	for (size_t i = 0; i < elements; i++) {
+		char tableSig[5] = { '\0' };
+		Memcpy(tableSig, list[i].Signature, 4);
+
+		MKMI_Printf("  Table:\r\n"
+			    "   Signature:                %s\r\n"
+			    "   Pointer:                  0x%x\r\n",
+			    tableSig, list[i].TablePointer);
+	}
+}
+
+void PrintUserTCB() {
+	UserTCB *userTCB = (UserTCB*)0x7fffffffe000;
+	char sig[5] = { '\0' };
+	Memcpy(sig, userTCB->Signature, 4);
+
+	MKMI_Printf("User TCB:\r\n"
+		    " Signature:                  %s\r\n"
+		    " Revision:                   0x%x\r\n"
+		    " Cheksum:                    0x%x\r\n"
+		    " System tables:              0x%x\r\n"
+		    " System table list offset:   0x%x\r\n"
+		    " Service tables:             0x%x\r\n"
+		    " Service table list offset:  0x%x\r\n",
+		    sig, userTCB->Revision, userTCB->Checksum, userTCB->SystemTables, userTCB->SystemTableListOffset, userTCB->ServiceTables, userTCB->ServiceTableListOffset);
+
+	MKMI_Printf(" System table list:\r\n");
+	PrintTableList((TableListElement*)((uintptr_t)userTCB + userTCB->SystemTableListOffset), userTCB->SystemTables);
+
+	MKMI_Printf(" Service table list:\r\n");
+	PrintTableList((TableListElement*)((uintptr_t)userTCB + userTCB->ServiceTableListOffset), userTCB->ServiceTables);
+
+}
+
 extern "C" size_t OnInit() {
 	SetMessageHandlerCallback(MessageHandler);
 	Syscall(SYSCALL_MODULE_MESSAGE_HANDLER, MKMI_MessageHandler, 0, 0, 0, 0, 0);
 
-	MKMI_Printf("User TCB magic: 0x%x\r\n", *(uint32_t*)(0x7fffffffe000));
+	PrintUserTCB();
 
 	VFSInit();
 	InitrdInit();
