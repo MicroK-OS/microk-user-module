@@ -61,6 +61,18 @@ struct KBST : public TableHeader {
 	size_t ReservedPhysicalMemory;
 }__attribute__((packed));
 
+struct BootFile {
+	void *Address;
+	uint64_t Size;
+	char *Path;
+	char *Cmdline;
+}__attribute__((packed));
+
+struct BFST: public TableHeader {
+	size_t NumberOfFiles;
+	BootFile Files[];
+}__attribute__((packed));
+
 void PrintTableList(TableListElement *list, size_t elements) {
 	for (size_t i = 0; i < elements; i++) {
 		char tableSig[5] = { '\0' };
@@ -86,6 +98,25 @@ void PrintTableList(TableListElement *list, size_t elements) {
 					    "  Used physical memory:       %dkb\r\n"
 					    "  Reserved physical memory:   %dkb\r\n",
 					    kbst->FreePhysicalMemory / 1024, kbst->UsedPhysicalMemory / 1024, kbst->ReservedPhysicalMemory / 1024);
+			} else if (Strcmp(tableSig, "BFST") == 0) {
+				BFST *bfst = (BFST*)table;
+				MKMI_Printf(" Files:\r\n"
+					    "  File count:                 %d\r\n",
+					    bfst->NumberOfFiles);
+
+				for(size_t file = 0; file < bfst->NumberOfFiles; ++file) {
+					MKMI_Printf("  File:\r\n"
+						    "   Address:                   0x%x\r\n"
+						    "   Size:                      %dkb\r\n"
+						    "   Path:                      %s\r\n"
+						    "   Cmdline:                   %s\r\n",
+						    bfst->Files[file].Address,
+						    bfst->Files[file].Size / 1024,
+						    bfst->Files[file].Path,
+						    bfst->Files[file].Cmdline
+						    );
+				}
+
 			}
 		}
 	}
@@ -119,6 +150,7 @@ extern "C" size_t OnInit() {
 	Syscall(SYSCALL_MODULE_MESSAGE_HANDLER, MKMI_MessageHandler, 0, 0, 0, 0, 0);
 
 	PrintUserTCB();
+	//Syscall(SYSCALL_PROC_RETURN, 0, 0, 0, 0, 0 ,0);
 
 	VFSInit();
 	InitrdInit();
