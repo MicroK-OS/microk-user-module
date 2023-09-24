@@ -42,7 +42,6 @@ extern "C" size_t OnInit() {
 
 	//Syscall(SYSCALL_PROC_RETURN, 0, 0, 0, 0, 0 ,0);
 
-	PrintUserTCB();
 	VFSInit();
 	InitrdInit();
 
@@ -136,19 +135,20 @@ void InitrdInit() {
 	/* We load the initrd using the kernel file method */
 	uintptr_t address;
 	size_t size;
-	Syscall(SYSCALL_FILE_OPEN, "FILE:/initrd.tar", &address, &size, 0, 0, 0);
+
+	UserTCB *tcb = GetUserTCB();
+	TableListElement *systemTableList = GetSystemTableList(tcb);
+	BFST *bfst = (BFST*)GetTableWithSignature(systemTableList, tcb->SystemTables, "BFST");
+	BootFile *initrd = GetFileFromBFST(bfst, "/initrd.tar");
+
 
 	/* Here we check whether it exists 
 	 * If it isn't there, just skip this step
 	 */
-	if (address != 0 && size != 0) {
-		/* Make it accessible in memory */
-		VMMap(address, address + HIGHER_HALF, size, 0);
+	if (initrd != NULL) {
+		MKMI_Printf("Loading file initrd.tar from 0x%x with size %dkb.\r\n", initrd->Address, initrd->Size / 1024);
 
-		address += HIGHER_HALF;
-		MKMI_Printf("Loading file initrd.tar from 0x%x with size %dkb.\r\n", address, size / 1024);
-
-		UnpackArchive(vfs, address, "/");
+		UnpackArchive(vfs, initrd->Address, "/");
 		rootRamfs->ListDirectory(0);
 
 		uint8_t *configFile;
@@ -156,7 +156,8 @@ void InitrdInit() {
 
 		uint8_t *execFile;
 		size_t execFileSize;
-		
+	
+		MKMI_Printf("Finding preload.conf...\r\n");
 		FindInArchive(address, "etc/modules.d/preload.conf", &configFile, &configFileSize);
 		if(configFile == NULL || configFileSize == 0) return;
 
