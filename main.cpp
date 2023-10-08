@@ -133,9 +133,6 @@ void InitrdInit() {
 	MKMI_Printf("Requesting initrd.\r\n");
 
 	/* We load the initrd using the kernel file method */
-	uintptr_t address;
-	size_t size;
-
 	UserTCB *tcb = GetUserTCB();
 	TableListElement *systemTableList = GetSystemTableList(tcb);
 	BFST *bfst = (BFST*)GetTableWithSignature(systemTableList, tcb->SystemTables, "BFST");
@@ -158,13 +155,15 @@ void InitrdInit() {
 		size_t execFileSize;
 	
 		MKMI_Printf("Finding preload.conf...\r\n");
-		FindInArchive(address, "etc/modules.d/preload.conf", &configFile, &configFileSize);
+		FindInArchive(initrd->Address, "etc/modules.d/preload.conf", &configFile, &configFileSize);
 		if(configFile == NULL || configFileSize == 0) return;
 
 		const char *id = Strtok(configFile, "=");
 		if(id == NULL) return;
 		const char *val = Strtok(NULL, "\r\n");
 		if (val == NULL) return;
+				
+		MKMI_Printf("OK\r\n");
 
 		while(true) {
 			if(Strcmp(id, "always") == 0) {
@@ -174,7 +173,7 @@ void InitrdInit() {
 
 				MKMI_Printf("Starting %s\r\n", fileName);
 
-				FindInArchive(address, fileName, &execFile, &execFileSize);
+				FindInArchive(initrd->Address, fileName, &execFile, &execFileSize);
 				if(execFile != NULL && execFileSize != 0) {
 					Syscall(SYSCALL_PROC_EXEC, execFile, execFileSize, 0, 0, 0, 0);
 				}
