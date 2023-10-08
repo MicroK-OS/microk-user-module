@@ -148,19 +148,23 @@ void InitrdInit() {
 		UnpackArchive(vfs, initrd->Address, "/");
 		rootRamfs->ListDirectory(0);
 
-		uint8_t *configFile;
-		size_t configFileSize;
+		uint8_t *configFile = NULL;
+		size_t configFileSize = 0;
 
-		uint8_t *execFile;
-		size_t execFileSize;
+		uint8_t *execFile = NULL;
+		size_t execFileSize = 0;
 	
 		MKMI_Printf("Finding preload.conf...\r\n");
 		FindInArchive(initrd->Address, "etc/modules.d/preload.conf", &configFile, &configFileSize);
 		if(configFile == NULL || configFileSize == 0) return;
 
-		const char *id = Strtok(configFile, "=");
+		size_t fileLength = Strlen(configFile);
+		char fileData[fileLength + 1] = { '\0' };
+		Memcpy(fileData, configFile, fileLength);
+
+		char *id = Strtok(fileData, "=");
 		if(id == NULL) return;
-		const char *val = Strtok(NULL, "\r\n");
+		char *val = Strtok(NULL, "\r\n");
 		if (val == NULL) return;
 				
 		MKMI_Printf("OK\r\n");
