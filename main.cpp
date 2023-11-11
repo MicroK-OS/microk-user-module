@@ -37,17 +37,9 @@ int MessageHandler(MKMI_Message *msg, uint64_t *data) {
 
 
 extern "C" size_t OnInit() {
-	SetMessageHandlerCallback(MessageHandler);
-	Syscall(SYSCALL_MODULE_MESSAGE_HANDLER, MKMI_MessageHandler, 0, 0, 0, 0, 0);
-
-	//Syscall(SYSCALL_PROC_RETURN, 0, 0, 0, 0, 0 ,0);
-
 	VFSInit();
 	InitrdInit();
 
-	Syscall(SYSCALL_MODULE_SECTION_REGISTER, "VFS", VendorID, ProductID, 0, 0 ,0);
-	
-	
 	return 0;
 }
 
@@ -144,7 +136,7 @@ void InitrdInit() {
 	 */
 	if (initrd != NULL) {
 		MKMI_Printf("Loading file initrd.tar from 0x%x with size %dkb.\r\n", initrd->Address, initrd->Size / 1024);
-
+/*
 		UnpackArchive(vfs, initrd->Address, "/");
 		rootRamfs->ListDirectory(0);
 
@@ -188,8 +180,7 @@ void InitrdInit() {
 			val = Strtok(NULL, "\r\n");
 			if (val == NULL) break;
 		}
-
-
+*/
 	} else {
 		MKMI_Printf("No initrd found");
 	}
