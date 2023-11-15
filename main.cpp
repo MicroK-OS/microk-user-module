@@ -21,22 +21,22 @@ VirtualFilesystem *vfs;
 RamFS *rootRamfs;
 filesystem_t ramfsDesc;
 
-int MessageHandler(MKMI_Message *msg, uint64_t *data) {
-	uint32_t *magicNumber = (uint32_t*)data;
-	MKMI_Printf("Magic number: %d\r\n", *magicNumber);
-
-	if(*magicNumber == FILE_OPERATION_REQUEST_MAGIC_NUMBER) {
-		vfs->DoFileOperation((FileOperationRequest*)data);
-	
-		SendDirectMessage(msg->SenderVendorID, msg->SenderProductID, (uint8_t*)msg, msg->MessageSize);
-		return 0;
-	}
-
-	return -1;
-}
-
-
 extern "C" size_t OnInit() {
+	QueueOperationStruct queueCtl;
+	queueCtl.Operation = QueueOperations::CREATE;
+	queueCtl.Create.PreallocateSize = 4096;
+	IPCQueueCtl(&queueCtl);
+
+	size_t id = queueCtl.Create.NewID;
+	MKMI_Printf("New queue with ID: %d\r\n", id);
+
+	char message[14] = "Hello, World!";
+	IPCMessageSend(id, message, 14, 0, 0);
+
+	char newMsgBuffer[32];
+	IPCMessageReceive(id, newMsgBuffer, 32, 0, 0);
+	MKMI_Printf("Message: %s\r\n", newMsgBuffer); 
+
 	VFSInit();
 	InitrdInit();
 
@@ -130,14 +130,18 @@ void InitrdInit() {
 	BFST *bfst = (BFST*)GetTableWithSignature(systemTableList, tcb->SystemTables, "BFST");
 	BootFile *initrd = GetFileFromBFST(bfst, "/initrd.tar");
 
+	const uintptr_t initrdMapping = 0x100000000;
 
 	/* Here we check whether it exists 
 	 * If it isn't there, just skip this step
 	 */
 	if (initrd != NULL) {
 		MKMI_Printf("Loading file initrd.tar from 0x%x with size %dkb.\r\n", initrd->Address, initrd->Size / 1024);
-/*
-		UnpackArchive(vfs, initrd->Address, "/");
+
+		VMMap(initrd->Address, initrdMapping, initrd->Size, PAGE_PROTECTION_READ);
+
+		UnpackArchive(vfs, initrdMapping, "/");
+
 		rootRamfs->ListDirectory(0);
 
 		uint8_t *configFile = NULL;
@@ -147,7 +151,7 @@ void InitrdInit() {
 		size_t execFileSize = 0;
 	
 		MKMI_Printf("Finding preload.conf...\r\n");
-		FindInArchive(initrd->Address, "etc/modules.d/preload.conf", &configFile, &configFileSize);
+		FindInArchive(initrdMapping, "etc/modules.d/preload.conf", &configFile, &configFileSize);
 		if(configFile == NULL || configFileSize == 0) return;
 
 		size_t fileLength = Strlen(configFile);
@@ -159,8 +163,6 @@ void InitrdInit() {
 		char *val = Strtok(NULL, "\r\n");
 		if (val == NULL) return;
 				
-		MKMI_Printf("OK\r\n");
-
 		while(true) {
 			if(Strcmp(id, "always") == 0) {
 				char fileName[256] = {0};
@@ -169,7 +171,7 @@ void InitrdInit() {
 
 				MKMI_Printf("Starting %s\r\n", fileName);
 
-				FindInArchive(initrd->Address, fileName, &execFile, &execFileSize);
+				FindInArchive(initrdMapping, fileName, &execFile, &execFileSize);
 				if(execFile != NULL && execFileSize != 0) {
 					Syscall(SYSCALL_PROC_EXEC, execFile, execFileSize, 0, 0, 0, 0);
 				}
@@ -180,7 +182,6 @@ void InitrdInit() {
 			val = Strtok(NULL, "\r\n");
 			if (val == NULL) break;
 		}
-*/
 	} else {
 		MKMI_Printf("No initrd found");
 	}
