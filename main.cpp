@@ -24,7 +24,7 @@ filesystem_t ramfsDesc;
 extern "C" size_t OnInit() {
 	QueueOperationStruct queueCtl;
 	queueCtl.Operation = QueueOperations::CREATE;
-	queueCtl.Create.PreallocateSize = 2048;
+	queueCtl.Create.PreallocateSize = 8192;
 	MKMI_Printf("Creating queue...\r\n");
 	IPCQueueCtl(&queueCtl);
 
